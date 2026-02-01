@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File
 import os
+from fastapi import FastAPI, UploadFile, File
+from rag.loader import extract_text_from_file
 
 app = FastAPI()
 
@@ -29,7 +30,9 @@ async def upload_file(file : UploadFile):
         content = await file.read()
         f.write(content)
     
+    text = extract_text_from_file(file_path)
+
     return {
         "filename" : file.filename,
-        "status": "saved"
+        "chars" : len(text)
     }
