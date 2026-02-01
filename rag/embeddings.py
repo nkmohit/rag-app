@@ -58,3 +58,24 @@ def index_text(text: str, source: str):
         metadatas=metadatas,
         ids=ids
     )
+
+def query_text(
+    query: str,
+    top_k: int = 5
+):
+    """
+    Perform semantic similarity search against the vector store.
+
+    Steps:
+    - embed the query text
+    - run vector similarity search in Chroma
+    - return top matching document chunks
+    """
+    query_embedding = model.encode([query]).tolist()
+
+    results = collection.query(
+        query_embeddings=query_embedding,
+        n_results=top_k
+    )
+
+    return results

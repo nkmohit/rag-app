@@ -1,12 +1,19 @@
 import os
 from fastapi import FastAPI, UploadFile, File
 from rag.loader import extract_text_from_file
-from rag.embeddings import index_text
+from rag.embeddings import index_text, query_text
+from pydantic import BaseModel
+
 
 app = FastAPI()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
 
 @app.get("/")
 def read_root():
@@ -62,4 +69,22 @@ async def index_file(file : UploadFile):
 
     return {
         "status": "indexed"
+    }
+
+@app.post("/query")
+def query_docs(request: QueryRequest):
+    """
+    Semantic Search Endpoint
+    
+    :param request: Description
+    :type request: QueryRequest
+    """
+    results = query_text(
+        query= request.query,
+        top_k= request.top_k
+    )
+
+    return {
+        "query": request.query,
+        "results": results
     }
