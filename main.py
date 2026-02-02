@@ -1,9 +1,12 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, UploadFile, File
 from rag.loader import extract_text_from_file
 from rag.embeddings import index_text, query_text
+from rag.generation import generate_answer
 from pydantic import BaseModel
-
 
 app = FastAPI()
 
@@ -13,6 +16,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 5
+    generate: bool = True
 
 
 @app.get("/")
@@ -74,17 +78,27 @@ async def index_file(file : UploadFile):
 @app.post("/query")
 def query_docs(request: QueryRequest):
     """
-    Semantic Search Endpoint
-    
-    :param request: Description
-    :type request: QueryRequest
+    RAG query endpoint:
+    - semantic retrieval
+    - optional generation
     """
     results = query_text(
-        query= request.query,
-        top_k= request.top_k
+        query=request.query,
+        top_k=request.top_k
     )
 
-    return {
+    documents = results.get("documents", [[]])[0]
+
+    response = {
         "query": request.query,
-        "results": results
+        "retrieved_chunks": documents
     }
+
+    if request.generate:
+        answer = generate_answer(
+            query=request.query,
+            contexts=documents
+        )
+        response["answer"] = answer
+
+    return response
